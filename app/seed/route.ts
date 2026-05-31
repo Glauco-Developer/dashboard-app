@@ -2,7 +2,8 @@ import bcrypt from 'bcrypt';
 import postgres from 'postgres';
 import { invoices, customers, revenue, users } from '../lib/placeholder-data';
 
-const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
+// Use direct connection for DDL/transactions (Supabase pooler breaks prepared statements).
+const sql = postgres(process.env.POSTGRES_URL_NON_POOLING!, { ssl: 'require' });
 
 async function seedUsers() {
   await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
@@ -112,6 +113,10 @@ export async function GET() {
 
     return Response.json({ message: 'Database seeded successfully' });
   } catch (error) {
-    return Response.json({ error }, { status: 500 });
+    console.error('Seed error:', error);
+    return Response.json(
+      { error: error instanceof Error ? error.message : String(error) },
+      { status: 500 },
+    );
   }
 }
